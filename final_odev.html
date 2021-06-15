@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous" />
+  <title>Covid Data</title>
+</head>
+
+<body>
+  <div class="container my-3">
+    <table id="TableCovid" class="table table-hover table-striped">
+      <thead>
+        <!--Tablonun başlıklarını oluşturdum.-->
+        <tr class="table-dark">
+          <th>ID</th>
+          <th>Country</th>
+          <th>Country Code</th>
+          <th>Province</th>
+          <th>City</th>
+          <th>CityCode</th>
+          <th>Lat</th>
+          <th>Lon</th>
+          <th>Confirmed</th>
+          <th>Deaths</th>
+          <th>Recovered</th>
+          <th>Active</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+  <h2 style="text-align: center">End Of Month Covid Total Cases</h2>
+  <canvas id="chart" width="30px" height="10px"></canvas>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.3.2/dist/chart.min.js"></script>
+  <script>
+    //DataTable kütüphanesini kullanarak apideki ilgili alanları tabloya yazdırdım.
+    $(function () {
+      $.get(
+        "https://api.covid19api.com/country/turkey?from=2021-01-01T00:00:00Z&amp;to=2021-06-01T00:00:00Z",
+        function (response) {
+          $("#TableCovid").DataTable({
+            data: response,
+            dataSrc: "",
+            columns: [
+              { data: "ID" },
+              { data: "Country" },
+              { data: "CountryCode" },
+              { data: "Province" },
+              { data: "City" },
+              { data: "CityCode" },
+              { data: "Lat" },
+              { data: "Lon" },
+              { data: "Confirmed" },
+              { data: "Deaths" },
+              { data: "Recovered" },
+              { data: "Active" },
+              { data: "Date" },
+            ],
+          });
+        }
+      );
+    });
+    //Grafik için apiyi çekiyorum.
+    var settings = {
+      async: true,
+      crossDomain: true,
+      url: "https://api.covid19api.com/country/turkey?from=2021-01-01T00:00:00Z&amp;to=2021-06-01T00:00:00Z",
+      method: "GET",
+      headers: {
+        "cache-control": "no-cache",
+        "postman-token": "ef0cdd3d-7343-bb20-71bd-c79ffb86035e",
+      },
+    };
+    //Grafiğe ayların son gününü getirmek için kullandığım fonksiyon
+    function lastDayOfMonth(year, month) {
+      let date = new Date(year, month + 1, 0);
+      return date.getDate();
+    }
+    //Active ve dates isimli iki array oluşturup for döngüsü ile apideki ayların son günlerini ve active'lerini bu arraylere aktarıyorum.
+    $.ajax(settings).done(function (response) {
+      let active = [];
+      let dates = [];
+
+      for (let i in response) {
+        var a = new Date(response[i].Date);
+        lastDay = lastDayOfMonth(a.getFullYear(), a.getMonth());
+        day = a.getDate()
+        if (day == lastDay) {
+          active.push(response[i].Active);
+          dates.push(response[i].Date);
+        }
+      }
+      //Chart'ı oluşturma kısmı
+      var ctx = document.getElementById("chart").getContext("2d");
+      var myChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: dates,
+          datasets: [
+            {
+              label: "Cases",
+              data: active,
+              backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(255, 159, 64, 0.2)',
+                'rgba(255, 205, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(201, 203, 207, 0.2)'
+              ],
+              borderColor: [
+                'rgb(255, 99, 132)',
+                'rgb(255, 159, 64)',
+                'rgb(255, 205, 86)',
+                'rgb(75, 192, 192)',
+                'rgb(54, 162, 235)',
+                'rgb(153, 102, 255)',
+                'rgb(201, 203, 207)'
+              ],
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      });
+    });
+  </script>
+</body>
+
+</html>
